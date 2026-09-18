@@ -1,0 +1,98 @@
+@import 'tailwindcss';
+
+/*
+ * Palette : nuit et cuivre. Contrastes vérifiés pour rester lisibles sur un
+ * téléphone, en extérieur, devant une salle de concert.
+ */
+@theme {
+  --color-ink-50: #faf9f7;
+  --color-ink-100: #f2efea;
+  --color-ink-200: #e3ddd4;
+  --color-ink-300: #c9c0b2;
+  --color-ink-400: #9c9184;
+  --color-ink-500: #6f6558;
+  --color-ink-600: #4e463c;
+  --color-ink-700: #35302a;
+  --color-ink-800: #211e1a;
+  --color-ink-900: #141210;
+
+  --color-copper-400: #e0a05a;
+  --color-copper-500: #c9813a;
+  --color-copper-600: #a4642a;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-ink-50);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  /* Évite le zoom automatique de Safari sur les champs de formulaire. */
+  font-size: 16px;
+}
+
+/* Cibles tactiles confortables : on manipule ce site debout, une main occupée. */
+button,
+[role='button'],
+a.btn {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-copper-500);
+  outline-offset: 2px;
+}
+
+/*
+ * Impression — la liste papier de secours doit sortir lisible en noir et blanc,
+ * sur une imprimante de bureau, sans réglage particulier.
+ */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  /* Le cadre de l'application n'a rien à faire sur le papier. */
+  header,
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* Un participant ne doit jamais être coupé entre deux pages. */
+  tr {
+    break-inside: avoid;
+  }
+
+  /* L'en-tête du tableau se répète sur chaque page. */
+  thead {
+    display: table-header-group;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}

@@ -1,0 +1,111 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nuits
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nuits}
+      POSTGRES_DB: nuits
+      # `scram-sha-256` plutôt que `md5` : l'authentification PostgreSQL par MD5
+      # est cassée et ne devrait plus être utilisée.
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256 --auth-local=scram-sha-256'
+    ports:
+      # Port hôte décalé par défaut : un PostgreSQL déjà installé sur la machine
+      # occupe souvent 5432 et empêcherait le conteneur de s'y lier. Surchargez
+      # POSTGRES_PORT si vous préférez un autre port.
+      #
+      # En production, retirez complètement cette section : la base n'a aucune
+      # raison d'être joignable depuis l'extérieur du réseau Docker.
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    security_opt:
+      # Empêche un processus du conteneur d'acquérir de nouveaux privilèges.
+      - no-new-privileges:true
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nuits -d nuits']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { cpus: '2', memory: 1G }
+
+  # Boîte mail de développement : tous les e-mails sortants atterrissent ici.
+  # Interface web sur http://localhost:8025
+  #
+  # Écoute uniquement sur la boucle locale : une boîte mail ouverte sur le réseau
+  # est un relais ouvert offert à qui passe.
+  mailhog:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '127.0.0.1:8025:8025'
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits: { cpus: '0.5', memory: 256M }
+
+  web:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://nuits:${POSTGRES_PASSWORD:-nuits}@postgres:5432/nuits
+      SMTP_HOST: mailhog
+      SMTP_PORT: '1025'
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      TICKET_SIGNING_SECRET: ${TICKET_SIGNING_SECRET:-dev-ticket-secret-a-changer-absolument}
+      LINK_SIGNING_SECRET: ${LINK_SIGNING_SECRET:-dev-link-secret-a-changer-absolument}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-dev-webhook-secret-a-changer-absolument}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-simulator}
+      MAIL_FROM: ${MAIL_FROM:-Les Nuits de la Garonne <billetterie@nuitsdelagaronne.fr>}
+    ports:
+      - '3000:3000'
+    # Le conteneur n'écrit rien sur son disque : tout l'état est en base. Un
+    # système de fichiers en lecture seule retire à un attaquant la possibilité
+    # de déposer un outil ou de modifier le code servi.
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits: { cpus: '2', memory: 1G }
+
+  # Tâches planifiées : expiration des réservations, offres de liste d'attente,
+  # file d'envoi des e-mails. Sans lui, rien n'expire.
+  worker:
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DATABASE_URL: postgresql://nuits:${POSTGRES_PASSWORD:-nuits}@postgres:5432/nuits
+      SMTP_HOST: mailhog
+      SMTP_PORT: '1025'
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      TICKET_SIGNING_SECRET: ${TICKET_SIGNING_SECRET:-dev-ticket-secret-a-changer-absolument}
+      LINK_SIGNING_SECRET: ${LINK_SIGNING_SECRET:-dev-link-secret-a-changer-absolument}
+      MAIL_FROM: ${MAIL_FROM:-Les Nuits de la Garonne <billetterie@nuitsdelagaronne.fr>}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits: { cpus: '1', memory: 512M }
+
+volumes:
+  pgdata:

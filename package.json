@@ -1,0 +1,51 @@
+{
+  "name": "nuits-garonne",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Billetterie des Nuits de la Garonne",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "worker": "tsx watch worker/index.ts",
+    "worker:start": "tsx worker/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/unit.test.ts tests/security.test.ts",
+    "test:concurrency": "tsx tests/concurrency.ts",
+    "test:webhook": "tsx tests/webhook.ts",
+    "test:all": "npm run test && npm run test:concurrency && npm run test:webhook && npm run test:checkin && npm run test:rate-limit",
+    "test:checkin": "tsx tests/checkin.ts",
+    "test:rate-limit": "tsx tests/rate-limit.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.44.6",
+    "jsqr": "^1.4.0",
+    "next": "^16.0.0",
+    "nodemailer": "^7.0.9",
+    "postgres": "^3.4.7",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.14",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/node": "^24.7.0",
+    "@types/nodemailer": "^7.0.4",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "drizzle-kit": "^0.31.5",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
