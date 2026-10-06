@@ -15,17 +15,19 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/unit.test.ts tests/security.test.ts",
+    "test": "node --test tests/unit.test.ts tests/security.test.ts tests/design.test.ts",
     "test:concurrency": "tsx tests/concurrency.ts",
     "test:webhook": "tsx tests/webhook.ts",
     "test:all": "npm run test && npm run test:concurrency && npm run test:webhook && npm run test:checkin && npm run test:rate-limit",
     "test:checkin": "tsx tests/checkin.ts",
-    "test:rate-limit": "tsx tests/rate-limit.ts"
+    "test:rate-limit": "tsx tests/rate-limit.ts",
+    "db:seed:preview": "tsx src/db/seed-preview.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.6",
     "jsqr": "^1.4.0",
+    "lucide-react": "^1.52.0",
     "next": "^16.0.0",
     "nodemailer": "^7.0.9",
     "postgres": "^3.4.7",

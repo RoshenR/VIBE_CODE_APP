@@ -4,6 +4,7 @@ loadEnv();
 import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { db } from './index';
+import { zonedToUtc } from '../lib/dates';
 import { events, organizations, ticketTypes, users } from './schema';
 
 /**
@@ -17,12 +18,24 @@ import { events, organizations, ticketTypes, users } from './schema';
 
 const DEMO_PASSWORD = 'nuits2026';
 
+/**
+ * Date d'événement : « dans N jours, à HH h MM, heure de Paris ».
+ *
+ * Calculée dans le fuseau du lieu, heure d'été ou d'hiver selon la date. Une
+ * version antérieure retranchait deux heures en dur : correct jusqu'au 25
+ * octobre, faux ensuite — les concerts de fin octobre s'affichaient une heure
+ * trop tôt.
+ */
 function daysFromNow(days: number, hour = 20, minute = 30): Date {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + days);
-  // 20 h 30 à Paris ≈ 18 h 30 UTC en heure d'été.
-  d.setUTCHours(hour - 2, minute, 0, 0);
-  return d;
+  const target = new Date(Date.now() + days * 86_400_000);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(target);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return zonedToUtc(get('year'), get('month'), get('day'), hour, minute, 'Europe/Paris');
 }
 
 async function main(): Promise<void> {

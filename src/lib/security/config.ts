@@ -35,6 +35,8 @@ const REQUIRED_SECRETS = [
   'PAYMENT_WEBHOOK_SECRET',
 ] as const;
 
+export type SecretName = (typeof REQUIRED_SECRETS)[number];
+
 /**
  * Mesure grossière de diversité : un secret de 40 caractères tous identiques
  * n'offre pas 40 caractères de résistance.
@@ -43,10 +45,17 @@ function hasEnoughVariety(value: string): boolean {
   return new Set(value).size >= 10;
 }
 
-export function auditSecrets(env: NodeJS.ProcessEnv = process.env): SecretIssue[] {
+/**
+ * `required` permet à un processus de ne contrôler que les secrets dont il se sert :
+ * le worker n'a pas à recevoir le secret des webhooks pour démarrer.
+ */
+export function auditSecrets(
+  env: NodeJS.ProcessEnv = process.env,
+  required: readonly SecretName[] = REQUIRED_SECRETS,
+): SecretIssue[] {
   const issues: SecretIssue[] = [];
 
-  for (const variable of REQUIRED_SECRETS) {
+  for (const variable of required) {
     const value = env[variable];
 
     if (!value) {
@@ -68,10 +77,10 @@ export function auditSecrets(env: NodeJS.ProcessEnv = process.env): SecretIssue[
 
   // Deux secrets identiques : compromettre l'un compromet l'autre, alors qu'ils
   // protègent des choses différentes (billets et liens de gestion).
-  const values = REQUIRED_SECRETS.map((v) => env[v]).filter(Boolean);
+  const values = required.map((v) => env[v]).filter(Boolean);
   if (new Set(values).size !== values.length) {
     issues.push({
-      variable: 'TICKET_SIGNING_SECRET / LINK_SIGNING_SECRET / PAYMENT_WEBHOOK_SECRET',
+      variable: required.join(' / '),
       problem: 'entropie insuffisante',
     });
   }
@@ -88,11 +97,11 @@ let verified = false;
  * signalée une fois et n'empêche rien : on veut pouvoir travailler sans
  * cérémonie, mais sans oublier ce qui reste à faire.
  */
-export function assertSecretsAreSafe(): void {
+export function assertSecretsAreSafe(required: readonly SecretName[] = REQUIRED_SECRETS): void {
   if (verified) return;
   verified = true;
 
-  const issues = auditSecrets();
+  const issues = auditSecrets(process.env, required);
   if (issues.length === 0) return;
 
   const report = issues.map((i) => `  • ${i.variable} : ${i.problem}`).join('\n');

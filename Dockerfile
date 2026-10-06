@@ -24,6 +24,11 @@ RUN npm run build
 FROM base AS runner
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 
+# Docker fixe HOSTNAME à l'identifiant du conteneur, et le serveur autonome de Next
+# n'écoute alors que sur cette adresse : le port publié fonctionne, mais la sonde de
+# santé (127.0.0.1) échouait, et le conteneur restait « unhealthy » à tort.
+ENV HOSTNAME=0.0.0.0
+
 # Utilisateur sans privilèges. L'image node fournit déjà `node` (uid 1000) :
 # une évasion de processus n'obtient alors pas les droits root sur l'hôte.
 COPY --from=builder --chown=node:node /app/public ./public

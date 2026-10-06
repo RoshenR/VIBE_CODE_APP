@@ -47,8 +47,11 @@ export async function POST(request: Request) {
 
   const parsed = createHoldSchema.safeParse(payload);
   if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    // `field` permet à l'interface d'afficher l'erreur contre le bon champ.
+    // Information optionnelle : les clients qui l'ignorent restent compatibles.
     return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? 'Données invalides.' },
+      { error: issue?.message ?? 'Données invalides.', field: issue?.path[0] ?? null },
       { status: 400 },
     );
   }

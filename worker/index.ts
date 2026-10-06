@@ -264,7 +264,9 @@ function schedule(name: string, fn: () => Promise<void>, intervalMs: number): vo
 async function main(): Promise<void> {
   // Même contrôle que l'application : le worker signe des liens et rend des
   // e-mails, il ne doit pas tourner avec des secrets publics.
-  assertSecretsAreSafe();
+  // Le worker signe des billets et des liens, mais ne reçoit jamais de webhook : il n'a
+  // pas besoin — et ne doit donc pas recevoir — le secret des notifications de paiement.
+  assertSecretsAreSafe(['TICKET_SIGNING_SECRET', 'LINK_SIGNING_SECRET']);
 
   log('worker', 'démarrage');
 

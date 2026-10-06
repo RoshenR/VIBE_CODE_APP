@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { Button } from '@/components/ui/button';
+import { InlineAlert } from '@/components/ui/states';
 import { unsubscribeAction } from './actions';
 
 export function UnsubscribeButton({ token }: { token: string }) {
@@ -9,35 +11,31 @@ export function UnsubscribeButton({ token }: { token: string }) {
 
   if (state === 'done') {
     return (
-      <p
-        role="status"
-        className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
-      >
-        C&apos;est fait. Vous ne recevrez plus d&apos;offre pour cet événement.
-      </p>
+      <InlineAlert tone="success" title="C'est fait." className="mt-6">
+        Vous ne recevrez plus d&apos;offre pour cet événement.
+      </InlineAlert>
     );
   }
 
   return (
     <div className="mt-6">
-      <button
-        type="button"
-        disabled={pending}
+      <Button
+        size="lg"
+        loading={pending}
         onClick={() =>
           startTransition(async () => {
             const result = await unsubscribeAction(token);
             setState(result.ok ? 'done' : 'error');
           })
         }
-        className="bg-ink-900 hover:bg-ink-800 rounded-xl px-5 py-3 font-semibold text-white disabled:opacity-60"
       >
         {pending ? 'Désinscription…' : 'Confirmer ma désinscription'}
-      </button>
+      </Button>
 
       {state === 'error' && (
-        <p role="alert" className="mt-3 text-sm text-rose-700">
-          Ce lien n&apos;est plus valable. Vous êtes peut-être déjà désinscrit·e.
-        </p>
+        <InlineAlert tone="danger" className="mt-4">
+          Ce lien n&apos;est plus valable : vous êtes peut-être déjà désinscrit·e.
+        </InlineAlert>
       )}
     </div>
   );

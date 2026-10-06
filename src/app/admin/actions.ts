@@ -9,7 +9,7 @@ import { orders } from '@/db/schema';
 import { completeTotp, signIn, signOut, type RequestContext } from '@/lib/auth';
 import { signInSchema } from '@/lib/validation';
 import { requireEvent, requireUser } from '@/lib/org';
-import { cancelOrder } from '@/server/orders';
+import { cancelOrder, OrderError } from '@/server/orders';
 import { offerNextInLine } from '@/server/waitlist';
 import { consumeAll, consume } from '@/lib/security/rate-limit';
 import { anonymizeIp } from '@/lib/security/config';
@@ -143,7 +143,10 @@ export async function signOutAction(): Promise<void> {
  * l'organisateur doit pouvoir rembourser à tout moment, y compris le soir même.
  * En contrepartie, l'action est tracée nominativement.
  */
-export async function cancelOrderAction(orderId: string, eventId: string): Promise<void> {
+export async function cancelOrderAction(
+  orderId: string,
+  eventId: string,
+): Promise<{ ok: boolean; error?: string }> {
   const { user, event } = await requireEvent(eventId, 'commande.annuler');
   const context = await requestContext();
 
@@ -151,32 +154,39 @@ export async function cancelOrderAction(orderId: string, eventId: string): Promi
   // Le contrôle d'appartenance ne se fie pas à l'identifiant d'événement reçu :
   // il vérifie que la commande relève bien de l'événement chargé depuis la
   // session.
-  if (!order || order.eventId !== event.id) return;
+  if (!order || order.eventId !== event.id) return { ok: false, error: 'Commande introuvable.' };
 
-  await db.transaction(async (tx) => {
-    await cancelOrder(tx, orderId, 'organizer');
-    await audit.record(
-      {
-        action: order.status === 'paid' ? 'commande.remboursee' : 'commande.annulee',
-        organizationId: user.organizationId,
-        userId: user.id,
-        targetType: 'order',
-        targetId: orderId,
-        metadata: {
-          reference: order.reference,
-          montant_centimes: order.totalCents,
-          par: 'organisateur',
+  try {
+    await db.transaction(async (tx) => {
+      await cancelOrder(tx, orderId, 'organizer');
+      await audit.record(
+        {
+          action: order.status === 'paid' ? 'commande.remboursee' : 'commande.annulee',
+          organizationId: user.organizationId,
+          userId: user.id,
+          targetType: 'order',
+          targetId: orderId,
+          metadata: {
+            reference: order.reference,
+            montant_centimes: order.totalCents,
+            par: 'organisateur',
+          },
+          ipPrefix: context.ipPrefix,
+          userAgent: context.userAgent,
         },
-        ipPrefix: context.ipPrefix,
-        userAgent: context.userAgent,
-      },
-      tx,
-    );
-  });
+        tx,
+      );
+    });
+  } catch (err) {
+    if (err instanceof OrderError) return { ok: false, error: err.message };
+    console.error("Échec d'annulation par l'organisateur", err);
+    return { ok: false, error: "L'annulation a échoué. Rien n'a été modifié." };
+  }
 
   await offerNextInLine(event.id).catch(() => undefined);
   revalidatePath(`/admin/evenements/${eventId}/commandes`);
   revalidatePath(`/admin/evenements/${eventId}`);
+  return { ok: true };
 }
 
 /* -------------------------------------------------------------------------- */

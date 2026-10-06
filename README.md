@@ -199,7 +199,7 @@ de passe pour le bloquer le soir d'un concert.
 
 | Défense | Ce qu'elle arrête |
 | --- | --- |
-| Contrôle d'origine sur les 8 routes POST ✅ | CSRF. Sans lui, un site tiers ayant vu passer un lien de gestion peut faire annuler la commande. |
+| Contrôle d'origine sur 7 des 8 routes POST ✅ | CSRF. Sans lui, un site tiers ayant vu passer un lien de gestion peut faire annuler la commande. |
 | Taille de corps plafonnée ✅ | Saturation mémoire par un JSON de 200 Mo. |
 | Limitation de débit par usage ✅ | Blocage d'une salle entière par mille réservations fantômes. |
 | Plafond de places par adresse | Revente automatisée : une jauge de 80 places qui part en trois minutes. |
@@ -311,6 +311,7 @@ src/
     checkin.ts     validation des billets et manifeste hors ligne
     reporting.ts   chiffres temps réel et export CSV
   emails/      gabarits des e-mails
+  components/  ui/ (boutons, champs, dialogues), brand/ (affiche, vagues), site/, admin/
   app/         pages publiques, espace organisateur, routes d'API
 worker/        expiration, offres, file d'envoi des e-mails
 tests/         unitaires, épreuve de concurrence, épreuve d'idempotence
@@ -333,10 +334,57 @@ et son identifiant d'événement doit être **stable entre deux envois du même
 
 ---
 
+## Identité visuelle et interface
+
+Direction : **« Bordeaux après la tombée du jour »**. Fond nuit, texte ivoire, un cuivre
+chaud pour l'action, une sauge pour le calme. La signature graphique est un faisceau de
+lignes ondulantes — le reflet des quais sur la Garonne — qui sert d'affiche, de fond de
+page et d'illustration des états vides.
+
+| Choix | Détail |
+| --- | --- |
+| Typographie | *Big Shoulders Display* (titres, capitales condensées) et *Instrument Sans* (texte), servies localement (`src/app/fonts/`, licences OFL jointes) : aucune requête vers un tiers. |
+| Couleurs | Jetons sémantiques dans `src/app/globals.css` (`@theme`) : `canvas`, `ink`, `night`, `copper`, `sage`, plus un jeu fonctionnel par état (succès, avertissement, erreur, information) en version « sur ivoire » et « sur nuit ». |
+| Affiches | Pas de photographies inventées : `EventPoster` compose l'affiche de chaque événement à partir de son titre, de sa date réelle et de son lieu. Quatre variantes, choisies par une graine stable dérivée du slug. |
+| États | Jamais portés par la seule couleur : chaque état a un mot, une icône et une bordure ou un motif distinct. Choix fait pour un public daltonien. |
+| Mouvement | 150 à 250 ms, uniquement pour expliquer un changement d'état ; `prefers-reduced-motion` est respecté et tout le contenu reste visible sans animation. |
+| Cibles | 44 × 44 px au minimum ; anneau de focus 3 px, encre sur ivoire et cuivre clair sur nuit. |
+
+Règles de contenu, appliquées partout :
+
+- **Rien d'inventé en production** : pas de statistique, de pourcentage d'évolution, de
+  compte à rebours d'urgence ni de « X personnes regardent ». Les chiffres affichés
+  viennent de la base.
+- **Concert mis en avant** : le prochain concert dont la vente est ouverte ; à défaut, le
+  prochain concert. La règle est écrite dans `pickFeaturedEvent`, sans réglage caché.
+- **Paiement simulé** : signalé sur le parcours de réservation, sur la page de paiement
+  et sur l'offre de la liste d'attente.
+- **Remboursement** : l'outil « enregistre » un remboursement, il n'en exécute aucun. Le
+  libellé est littéral partout (« Remboursement enregistré ») et une commande gratuite ne
+  parle jamais de remboursement.
+- **Contrôle à l'entrée** : cinq verdicts distincts par le mot, l'icône et la bordure —
+  accepté, déjà utilisé, invalide, validé localement en attente de synchronisation,
+  conflit après synchronisation. Le mode de connexion, la dernière synchronisation et le
+  nombre de validations en attente sont toujours visibles ; la limite du mode hors ligne
+  est expliquée à l'écran.
+
+Prévisualiser des cas que le jeu de démonstration ne couvre pas (complet, catégorie
+épuisée, ventes terminées ou à venir, titre très long, événement en ligne dans un autre
+fuseau) :
+
+```bash
+npm run db:seed:preview            # crée des événements « apercu-… »
+npm run db:seed:preview -- --clean # les retire, commandes et billets compris
+```
+
+Captures de référence : [`docs/captures/`](docs/captures/).
+
+---
+
 ## Tests
 
 ```bash
-npm test                  # unitaires : tarifs early, signature QR, fuseaux
+npm test                  # unitaires : tarifs, QR, fuseaux, programmation, contrastes
 npm run test:concurrency  # anti-survente sous charge (nécessite PostgreSQL)
 npm run test:webhook      # idempotence du paiement (nécessite PostgreSQL)
 npm run test:checkin      # contrôle à l'entrée, hors ligne compris
@@ -352,8 +400,8 @@ Résultats obtenus sur cette base :
 
 | Épreuve | Contrôles |
 | --- | --- |
-| Unitaires (dont sécurité) | 48 |
-| Anti-survente (50/10, 200/25, 60×2/30, catégories croisées) | 18 |
+| Unitaires (dont sécurité, programmation, dates et contrastes des jetons) | 117 |
+| Anti-survente (50/10, 200/25, 60×2/30, catégories croisées) | 19 |
 | Idempotence du paiement | 10 |
 | Contrôle à l'entrée | 19 |
 | Débit et verrouillage | 16 |

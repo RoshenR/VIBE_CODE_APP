@@ -45,3 +45,10 @@ export type Permission = (typeof PERMISSIONS)[Role][number];
 export function can(user: { role: Role }, permission: Permission): boolean {
   return (PERMISSIONS[user.role] as readonly string[]).includes(permission);
 }
+
+/** Libellés des rôles, tels qu'affichés dans l'interface. */
+export const ROLE_LABELS: Record<Role, string> = {
+  owner: 'Responsable',
+  staff: 'Équipe',
+  scanner: "Poste d'entrée",
+};

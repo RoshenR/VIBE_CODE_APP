@@ -40,6 +40,23 @@ describe('contrôle des secrets', () => {
     assert.equal(issues[0]?.problem, 'valeur par défaut publique');
   });
 
+  test('le worker démarre sans le secret des webhooks, dont il ne se sert pas', () => {
+    const workerEnv = { ...bon, PAYMENT_WEBHOOK_SECRET: undefined } as unknown as NodeJS.ProcessEnv;
+    const required = ['TICKET_SIGNING_SECRET', 'LINK_SIGNING_SECRET'] as const;
+
+    assert.equal(auditSecrets(workerEnv, required).length, 0);
+    // L'application, elle, le réclame toujours.
+    assert.equal(auditSecrets(workerEnv).find((i) => i.variable === 'PAYMENT_WEBHOOK_SECRET')?.problem, 'manquant');
+  });
+
+  test('un secret du worker reste contrôlé : valeur publique refusée', () => {
+    const issues = auditSecrets(
+      { ...bon, LINK_SIGNING_SECRET: 'dev-link-secret-a-changer-absolument' } as unknown as NodeJS.ProcessEnv,
+      ['TICKET_SIGNING_SECRET', 'LINK_SIGNING_SECRET'],
+    );
+    assert.equal(issues[0]?.problem, 'valeur par défaut publique');
+  });
+
   test('refuse un secret absent', () => {
     const issues = auditSecrets({
       ...bon,

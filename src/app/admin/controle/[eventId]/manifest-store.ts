@@ -34,6 +34,8 @@ export interface PendingScan {
 const manifestKey = (eventId: string) => `ndg.manifest.${eventId}`;
 const localScansKey = (eventId: string) => `ndg.localScans.${eventId}`;
 const queueKey = (eventId: string) => `ndg.queue.${eventId}`;
+const lastSyncKey = (eventId: string) => `ndg.lastSync.${eventId}`;
+const conflictsKey = (eventId: string) => `ndg.conflicts.${eventId}`;
 const deviceKey = 'ndg.device';
 
 /** Toute lecture peut échouer (mode privé, quota) : jamais de plantage en salle. */
@@ -93,6 +95,47 @@ export function clearQueue(eventId: string, sent: PendingScan[]): void {
     queueKey(eventId),
     loadQueue(eventId).filter((s) => !sentIds.has(s.ticketId)),
   );
+}
+
+/**
+ * Horodatage (ISO) de la dernière synchronisation RÉUSSIE avec le serveur.
+ *
+ * Un envoi qui échoue ne le met jamais à jour : afficher « synchronisé à 21 h 04 »
+ * pour une synchronisation qui n'a pas eu lieu serait un mensonge dangereux à la
+ * porte.
+ */
+export function loadLastSync(eventId: string): string | null {
+  return read<string | null>(lastSyncKey(eventId), null);
+}
+
+export function saveLastSync(eventId: string, iso: string): void {
+  write(lastSyncKey(eventId), iso);
+}
+
+/** Conflit révélé à la synchronisation : un autre poste avait déjà validé ce billet. */
+export interface StoredConflict {
+  ticketId: string;
+  serial: string;
+  holderName: string | null;
+  /** Premier passage enregistré par le serveur (ISO). */
+  firstScanAt: string;
+  /** Appareil qui a validé en premier. */
+  firstDevice: string | null;
+  /** Moment où CET appareil a accepté le même billet (ISO). */
+  localScanAt: string | null;
+}
+
+/**
+ * Les conflits restent affichés jusqu'à ce que l'équipe les ait vus et écartés :
+ * ils survivent à un rechargement de la page, car c'est précisément au moment où
+ * la connexion revient — et où l'on recharge — qu'ils apparaissent.
+ */
+export function loadConflicts(eventId: string): StoredConflict[] {
+  return read<StoredConflict[]>(conflictsKey(eventId), []);
+}
+
+export function saveConflicts(eventId: string, conflicts: StoredConflict[]): void {
+  write(conflictsKey(eventId), conflicts);
 }
 
 /**

@@ -1,48 +1,273 @@
 @import 'tailwindcss';
 
 /*
- * Palette : nuit et cuivre. Contrastes vérifiés pour rester lisibles sur un
- * téléphone, en extérieur, devant une salle de concert.
+ * « Bordeaux après la tombée du jour »
+ *
+ * Système visuel de la billetterie. Deux ambiances qui se répondent :
+ *   • la NUIT (noir encré) pour l'immersif : hero, affiches, poste d'entrée ;
+ *   • l'IVOIRE chaud pour la lecture : formulaires, commandes, administration.
+ * Le cuivre porte les actions ; la sauge n'apparaît qu'en touche secondaire.
+ *
+ * Chaque paire texte/fond de ce fichier est vérifiée par un test
+ * (tests/design-tokens.test.ts) : un changement de teinte qui ferait passer un
+ * contraste sous le seuil fait échouer la suite.
  */
+
 @theme {
-  --color-ink-50: #faf9f7;
-  --color-ink-100: #f2efea;
-  --color-ink-200: #e3ddd4;
-  --color-ink-300: #c9c0b2;
-  --color-ink-400: #9c9184;
-  --color-ink-500: #6f6558;
-  --color-ink-600: #4e463c;
-  --color-ink-700: #35302a;
-  --color-ink-800: #211e1a;
-  --color-ink-900: #141210;
+  /* --- Ivoire : surfaces de lecture -------------------------------------- */
+  --color-canvas: #f2eee6; /* fond de page */
+  --color-paper: #fbf9f4; /* surface relevée : cartes, champs */
+  --color-sunken: #e8e2d6; /* surface en creux : bandeaux, en-têtes de tableau */
 
-  --color-copper-400: #e0a05a;
-  --color-copper-500: #c9813a;
-  --color-copper-600: #a4642a;
+  /* --- Encre : textes sur ivoire ------------------------------------------ */
+  --color-ink: #14181b; /* texte principal */
+  --color-ink-soft: #3f464b; /* texte secondaire */
+  --color-ink-muted: #5a6267; /* métadonnées — reste ≥ 4,5:1 sur toutes les surfaces ivoire */
+  --color-rule: #d8d0be; /* filets décoratifs */
+  --color-rule-strong: #857e6d; /* bordures de contrôles (≥ 3:1) */
 
+  /* --- Nuit : surfaces immersives ----------------------------------------- */
+  --color-night: #111416;
+  --color-night-raised: #1a1f22;
+  --color-night-high: #252c30;
+  --color-night-rule: #2b3338;
+  --color-night-rule-strong: #6b767d; /* bordures de contrôles sur nuit (≥ 3:1) */
+  --color-on-night: #f2eee6;
+  --color-on-night-soft: #bcc2bf;
+  --color-on-night-muted: #98a09c;
+
+  /* --- Cuivre : actions et accents ----------------------------------------- */
+  --color-copper: #e6a77d; /* surface d'action — texte encre dessus */
+  --color-copper-hover: #eebb98;
+  --color-copper-press: #d79163;
+  --color-copper-ink: #8a4b22; /* texte et pictogrammes cuivrés SUR IVOIRE */
+  --color-copper-wash: #f3dcc9;
+
+  /* --- Sauge : accent secondaire, ponctuel --------------------------------- */
+  --color-sage: #8fa99d;
+  --color-sage-ink: #3f5a4d;
+  --color-sage-wash: #dde6e0;
+
+  /*
+   * --- États fonctionnels ---------------------------------------------------
+   * Toujours accompagnés d'un texte ET d'un pictogramme : la couleur ne porte
+   * jamais seule l'information (daltonisme). Les teintes « ink » se posent sur
+   * les « wash » correspondants ; les teintes « on-night » sur la nuit.
+   */
+  --color-success-ink: #1b6244;
+  --color-success-wash: #d9ebe0;
+  --color-success-night: #86d0a8;
+  --color-warning-ink: #6e4600;
+  --color-warning-wash: #f5e2b5;
+  --color-warning-night: #f0c36a;
+  --color-danger-ink: #9b2a2a;
+  --color-danger-wash: #f4d9d4;
+  --color-danger-night: #ff9b8f;
+  --color-info-ink: #2a5870;
+  --color-info-wash: #d8e6ee;
+  --color-info-night: #8ec4e0;
+
+  /* --- Typographie --------------------------------------------------------- */
+  --font-display:
+    var(--font-display-face), 'Arial Narrow', 'Helvetica Neue Condensed', Impact, sans-serif;
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    var(--font-sans-face), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Échelle des titres : fluide, resserrée en hauteur de ligne. */
+  --text-display-2xl: clamp(3.75rem, 1.8rem + 9vw, 9.5rem);
+  --text-display-2xl--line-height: 0.84;
+  --text-display-xl: clamp(3rem, 1.5rem + 6vw, 6.25rem);
+  --text-display-xl--line-height: 0.88;
+  --text-display-lg: clamp(2.5rem, 1.4rem + 3.8vw, 4.25rem);
+  --text-display-lg--line-height: 0.92;
+  --text-display-md: clamp(1.875rem, 1.3rem + 2vw, 2.875rem);
+  --text-display-md--line-height: 0.96;
+  --text-display-sm: clamp(1.5rem, 1.25rem + 0.9vw, 1.875rem);
+  --text-display-sm--line-height: 1;
+
+  /* --- Formes -------------------------------------------------------------- */
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --radius-poster: 3px;
+  --radius-ticket: 14px;
+
+  /* --- Ombres --------------------------------------------------------------- */
+  --shadow-panel: 0 1px 0 rgb(17 20 22 / 0.04), 0 18px 40px -24px rgb(17 20 22 / 0.35);
+  --shadow-lift: 0 2px 0 rgb(17 20 22 / 0.05), 0 28px 60px -28px rgb(17 20 22 / 0.5);
+  --shadow-poster: 0 30px 70px -30px rgb(0 0 0 / 0.7);
+
+  --ease-out-soft: cubic-bezier(0.22, 0.8, 0.24, 1);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
 
 html {
   -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+  scroll-padding-top: 5rem;
+}
+
+/* La barre d'action mobile (page événement) ne doit jamais masquer un champ
+   amené à l'écran par le clavier ou par un focus programmatique. */
+@media (max-width: 1023px) {
+  html {
+    scroll-padding-bottom: 7rem;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
-  background: var(--color-ink-50);
-  color: var(--color-ink-900);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   font-family: var(--font-sans);
-  /* Évite le zoom automatique de Safari sur les champs de formulaire. */
-  font-size: 16px;
+  /* 16 px minimum : évite le zoom automatique de Safari dans les champs. */
+  font-size: 1rem;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Cibles tactiles confortables : on manipule ce site debout, une main occupée. */
 button,
 [role='button'],
-a.btn {
-  min-height: 44px;
+summary {
   touch-action: manipulation;
+}
+
+::selection {
+  background: var(--color-copper);
+  color: var(--color-night);
+}
+
+/*
+ * La couleur du contour est posée d'avance : sinon, `transition-colors` la fait partir de
+ * `currentColor` (l'ivoire du texte d'une puce sombre) et l'anneau clignote 150 ms.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]) {
+  outline-color: var(--focus, var(--color-ink));
+}
+
+/*
+ * Focus : un anneau toujours visible, quelle que soit la surface.
+ * Encre sur ivoire, cuivre clair sur nuit (`.surface-night` change la variable).
+ */
+:focus-visible {
+  outline: 3px solid var(--focus, var(--color-ink));
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.surface-night {
+  --focus: #f4c4a2;
+  background-color: var(--color-night);
+  color: var(--color-on-night);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utilitaires de composition                                                 */
+/* -------------------------------------------------------------------------- */
+
+/* Colonne de contenu : 1 280 px de large maximum, marges de 16 à 40 px. */
+@utility page-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 0.4rem + 2.4vw, 2.5rem);
+}
+
+/* Titres d'affiche : condensés, capitales, serrés. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
+}
+
+/* Surtitres et étiquettes. */
+@utility eyebrow {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Longueur de ligne de lecture confortable. */
+@utility measure {
+  max-width: 62ch;
+}
+
+/* Grain léger : donne de la matière aux grandes surfaces nuit. */
+@utility grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* -------------------------------------------------------------------------- */
+/* Mouvement                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Apparition initiale discrète. L'état de départ n'existe QUE dans l'animation :
+ * si elle ne se lance pas, l'élément est simplement affiché normalement.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 120px 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: rise 420ms var(--ease-out-soft) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+  .reveal-fade {
+    animation: fade 600ms ease-out both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -50,30 +275,84 @@ a.btn {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-copper-500);
-  outline-offset: 2px;
+/* -------------------------------------------------------------------------- */
+/* Boîtes de dialogue natives                                                 */
+/* -------------------------------------------------------------------------- */
+
+dialog.dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  max-width: min(32rem, calc(100vw - 2rem));
+  width: 100%;
+  margin: auto;
+}
+dialog.dialog::backdrop {
+  background: rgb(10 12 13 / 0.72);
+  backdrop-filter: blur(2px);
 }
 
-/*
- * Impression — la liste papier de secours doit sortir lisible en noir et blanc,
- * sur une imprimante de bureau, sans réglage particulier.
- */
+/* -------------------------------------------------------------------------- */
+/* Tableaux de l'administration                                               */
+/* -------------------------------------------------------------------------- */
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+.data-table thead th {
+  padding: 0.7rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  background: var(--color-sunken);
+  white-space: nowrap;
+}
+.data-table td,
+.data-table tbody th {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid var(--color-rule);
+  vertical-align: middle;
+}
+.data-table tbody th {
+  text-align: left;
+  font-weight: 600;
+}
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Impression — liste papier de secours                                       */
+/* -------------------------------------------------------------------------- */
+
 @media print {
+  html,
   body {
-    background: #fff;
-    color: #000;
+    background: #fff !important;
+    color: #000 !important;
     font-size: 11pt;
   }
 
-  /* Le cadre de l'application n'a rien à faire sur le papier. */
+  /* Tout le cadre applicatif disparaît : seul le document sort sur le papier. */
+  .no-print,
   header,
   nav,
-  footer {
+  footer,
+  dialog {
     display: none !important;
   }
 
@@ -82,17 +361,43 @@ a.btn {
     padding: 0 !important;
   }
 
-  /* Un participant ne doit jamais être coupé entre deux pages. */
   tr {
     break-inside: avoid;
   }
 
-  /* L'en-tête du tableau se répète sur chaque page. */
   thead {
     display: table-header-group;
+  }
+
+  .data-table thead th {
+    background: #fff !important;
+    color: #000 !important;
+    border-bottom: 1.5px solid #000;
+  }
+  .data-table td,
+  .data-table tbody th {
+    border-top: 1px solid #999;
   }
 
   a[href]::after {
     content: '';
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Tiroir de navigation mobile (administration)                               */
+/* -------------------------------------------------------------------------- */
+
+dialog.drawer {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(20rem, 88vw);
+  max-width: none;
+  overflow-y: auto;
+}
+dialog.drawer::backdrop {
+  background: rgb(10 12 13 / 0.72);
 }
